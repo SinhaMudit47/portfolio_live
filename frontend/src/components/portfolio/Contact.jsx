@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import axios from "axios";
 import { profile } from "../../mock/data";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -6,6 +7,8 @@ import { Textarea } from "../ui/textarea";
 import { useToast } from "../../hooks/use-toast";
 import useReveal from "../../hooks/useReveal";
 import { Mail, MapPin, Linkedin, Phone, Send } from "lucide-react";
+
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 export default function Contact() {
   const [ref, inView] = useReveal();
@@ -18,24 +21,40 @@ export default function Contact() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name || !form.email || !form.message) {
-      toast({ title: "Missing fields", description: "Please add your name, email and a message." });
+      toast({
+        title: "Missing fields",
+        description: "Please add your name, email and a message."
+      });
       return;
     }
     setLoading(true);
-    // Mock submit — backend wiring will replace this
-    await new Promise((r) => setTimeout(r, 900));
-    setLoading(false);
-    // Persist locally so it isn't lost (frontend-only mock)
-    const draft = { ...form, ts: Date.now() };
-    const all = JSON.parse(localStorage.getItem("ms_messages") || "[]");
-    all.unshift(draft);
-    localStorage.setItem("ms_messages", JSON.stringify(all.slice(0, 25)));
-
-    toast({
-      title: "Message saved (mock)",
-      description: "Backend wiring will email Mudit directly. Stored locally for now."
-    });
-    setForm({ name: "", email: "", subject: "", message: "" });
+    try {
+      const res = await axios.post(`${API}/contact`, {
+        name: form.name,
+        email: form.email,
+        subject: form.subject || "",
+        message: form.message
+      });
+      const delivered = res?.data?.email_delivered;
+      toast({
+        title: delivered ? "Message sent" : "Message received",
+        description: delivered
+          ? "Thanks for reaching out — Mudit will reply soon."
+          : "Saved safely. Mudit will get back to you over email shortly."
+      });
+      setForm({ name: "", email: "", subject: "", message: "" });
+    } catch (err) {
+      const detail =
+        err?.response?.data?.detail ||
+        err?.message ||
+        "Something went wrong sending your message.";
+      toast({
+        title: "Couldn't send message",
+        description: typeof detail === "string" ? detail : "Please try again in a moment."
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -136,12 +155,12 @@ export default function Contact() {
 
             <div className="mt-6 flex items-center justify-between flex-wrap gap-3">
               <p className="font-mono text-[11px] text-stone-500">
-                * Backend email delivery comes online after we wire integration.
+                * Replies go straight to Mudit's inbox — typically within 1–2 days.
               </p>
               <Button
                 type="submit"
                 disabled={loading}
-                className="h-11 px-6 rounded-full bg-amber-300 text-[#0a0a0c] hover:bg-amber-200 font-mono text-[12.5px] tracking-wide"
+                className="h-11 px-6 rounded-full bg-amber-300 text-[#0a0a0c] hover:bg-amber-200 font-mono text-[12.5px] tracking-wide disabled:opacity-70"
               >
                 {loading ? "Sending..." : (
                   <>

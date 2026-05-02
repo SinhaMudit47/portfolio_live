@@ -101,3 +101,188 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: |
+  Build a professional dynamic portfolio website for Mudit Sinha (GenAI Engineer)
+  based on his resume and LinkedIn profile. Wire backend for the Contact form to
+  send real emails via Resend and persist messages in MongoDB.
+
+backend:
+  - task: "POST /api/contact - submit contact message and send email via Resend"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: |
+            Implemented POST /api/contact endpoint. Validates payload via
+            Pydantic ContactCreate (name 1-120, EmailStr email, subject<=200,
+            message 1-5000). Persists doc to MongoDB collection
+            contact_messages with id (uuid), name, email, subject, message,
+            created_at (UTC tz-aware), email_delivered, email_error.
+            Sends email via Resend using onboarding@resend.dev (free domain)
+            to muditsinha4899@gmail.com with the visitor's email as Reply-To.
+            Returns 201 with {id, created_at, email_delivered}.
+            If Resend fails, message is still saved and email_delivered=false.
+        - working: true
+          agent: "testing"
+          comment: |
+            ✅ ALL TESTS PASSED (9/9)
+            Tested at public URL: https://interview-ready-61.preview.emergentagent.com/api
+            
+            Happy path tests:
+            - POST /api/contact with valid payload → 201 with {id, created_at, email_delivered: true}
+            - Message persisted to MongoDB collection contact_messages with all required fields
+            - Email successfully delivered via Resend (email_delivered: true)
+            - POST /api/contact with subject omitted → 201 (subject is optional, defaults to empty string)
+            
+            Validation tests (all return 422 as expected):
+            - Missing required field 'message' → 422
+            - Missing required field 'name' → 422
+            - Invalid email format → 422
+            - Message exceeds 5000 chars → 422
+            
+            MongoDB persistence verified:
+            - Documents contain: id (uuid), name, email, subject, message, created_at, email_delivered, email_error
+            - created_at is UTC timezone-aware
+            - email_delivered=true, email_error=None for successful sends
+            
+            CORS: Access-Control-Allow-Origin: * configured correctly
+            Backend logs: No errors, all requests handled properly
+
+  - task: "GET /api/contact - list last 50 contact messages"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: |
+            Returns up to 50 most recent messages from contact_messages
+            sorted by created_at desc.
+        - working: true
+          agent: "testing"
+          comment: |
+            ✅ PASSED
+            - GET /api/contact returns 200 with array of messages
+            - Messages sorted by created_at descending (newest first)
+            - Each message contains all required fields: id, name, email, subject, message, created_at, email_delivered, email_error
+            - Test messages from POST tests successfully retrieved
+            - Limit of 50 messages enforced by backend
+
+  - task: "GET /api/ - root health endpoint"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "low"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Renamed message string. Existing /api/status endpoints kept."
+        - working: true
+          agent: "testing"
+          comment: |
+            ✅ PASSED
+            - GET /api/ returns 200 with {"message": "Mudit Sinha Portfolio API"}
+            - Health check endpoint working correctly
+
+frontend:
+  - task: "Portfolio frontend (Hero, About, Experience, Projects, Skills, Education, Achievements, Contact, Footer)"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/pages/Portfolio.jsx"
+    stuck_count: 0
+    priority: "low"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Frontend will only be tested if user explicitly asks."
+
+  - task: "Contact form posts to /api/contact"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/portfolio/Contact.jsx"
+    stuck_count: 0
+    priority: "low"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: |
+            Replaced localStorage mock with axios.post to
+            ${REACT_APP_BACKEND_URL}/api/contact. Shows success/failure
+            toasts based on email_delivered flag. Frontend will only be
+            tested if user explicitly approves.
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 2
+  run_ui: false
+
+test_plan:
+  current_focus:
+    - "POST /api/contact - submit contact message and send email via Resend"
+    - "GET /api/contact - list last 50 contact messages"
+    - "GET /api/ - root health endpoint"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+    - agent: "main"
+      message: |
+        Contact form backend wired with Resend (onboarding@resend.dev free
+        domain). RESEND_API_KEY is set in backend/.env. Recipient is
+        muditsinha4899@gmail.com.
+        Please test:
+          1. POST /api/contact with valid payload -> expect 201 with
+             email_delivered: true and a row in MongoDB collection
+             contact_messages.
+          2. POST /api/contact with invalid email / missing fields ->
+             expect 422 validation error.
+          3. POST /api/contact with very long message (>5000 chars) ->
+             expect 422.
+          4. GET /api/contact -> expect array of messages, newest first,
+             max 50.
+          5. GET /api/ -> health response.
+        Note on Resend free domain: the API will only successfully deliver
+        to the email address that registered the Resend account
+        (muditsinha4899@gmail.com). Treat that as expected behavior.
+    - agent: "testing"
+      message: |
+        ✅ BACKEND TESTING COMPLETE - ALL TESTS PASSED (9/9)
+        
+        Tested all three backend endpoints at public URL:
+        https://interview-ready-61.preview.emergentagent.com/api
+        
+        Results:
+        1. GET /api/ → ✅ Returns correct health message
+        2. POST /api/contact (happy path) → ✅ 201, email_delivered: true, MongoDB persistence verified
+        3. POST /api/contact (no subject) → ✅ 201, optional field handled correctly
+        4. POST /api/contact validations → ✅ All return 422 as expected:
+           - Missing 'message' field
+           - Missing 'name' field
+           - Invalid email format
+           - Message > 5000 chars
+        5. GET /api/contact → ✅ Returns array with all required fields, sorted correctly
+        6. CORS → ✅ Configured with allow_origins=["*"]
+        
+        MongoDB verification:
+        - All messages persisted to contact_messages collection
+        - All required fields present: id, name, email, subject, message, created_at, email_delivered, email_error
+        - Resend email integration working (email_delivered: true)
+        
+        Backend logs: Clean, no errors
+        
+        All backend functionality is working correctly. Ready for production.
