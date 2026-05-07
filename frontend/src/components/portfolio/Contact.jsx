@@ -6,7 +6,7 @@ import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
 import { useToast } from "../../hooks/use-toast";
 import useReveal from "../../hooks/useReveal";
-import { Mail, MapPin, Linkedin, Phone, Send } from "lucide-react";
+import { Mail, MapPin, Linkedin, Send } from "lucide-react";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -79,7 +79,6 @@ export default function Contact() {
           <div className="md:col-span-5 space-y-3">
             {[
               { icon: Mail, label: "Email", value: profile.email, href: `mailto:${profile.email}` },
-              { icon: Phone, label: "Phone", value: profile.phone, href: `tel:${profile.phone.replace(/\s/g, "")}` },
               { icon: Linkedin, label: "LinkedIn", value: "mudit-sinha", href: profile.linkedin },
               { icon: MapPin, label: "Location", value: profile.location, href: null }
             ].map((c) => {
