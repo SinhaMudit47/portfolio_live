@@ -8,7 +8,6 @@ export const profile = {
   tagline: "Building production-grade LLM applications, agentic workflows, and enterprise AI copilots.",
   location: "Indore, Madhya Pradesh, India",
   email: "muditsinha4899@gmail.com",
-  phone: "+91 6265290180",
   linkedin: "https://www.linkedin.com/in/mudit-sinha-35107617b",
   resumeUrl: "/assets/Mudit_Sinha_Resume.docx",
   yearsExperience: "3+",
